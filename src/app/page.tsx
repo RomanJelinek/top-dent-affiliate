@@ -3,11 +3,6 @@ import { getTransactions, Transaction } from "./ehub.actions";
 import AffiliateOrdersClient from "./AffiliateOrdersClient";
 import { getUpgatesOrdersByDate, UpgatesOrder } from "./upgates.actions";
 
-interface AffiliateOrdersPageProps {
-  searchParams: {
-    page?: string;
-  };
-}
 
 // Pomocná funkce pro formátování dat bez milisekund (např. "2023-03-20T14:30:00Z")
 function formatDateForUpgates(date: Date): string {
@@ -23,7 +18,9 @@ interface EnhancedTransaction extends Transaction {
 
 export default async function AffiliateOrdersPage({
   searchParams,
-}: AffiliateOrdersPageProps) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+}: any) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   // Řešení chyby: await searchParams před použitím jeho vlastností
   const sp = await Promise.resolve(searchParams);
   const currentPage = parseInt(sp.page ?? "1", 10);
