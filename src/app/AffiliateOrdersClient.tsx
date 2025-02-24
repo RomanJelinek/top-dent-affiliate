@@ -26,7 +26,7 @@ export default function AffiliateOrdersClient({
   totalPages,
   currentPage,
 }: AffiliateOrdersClientProps) {
-  const tolerance = 0.01;
+  const tolerance = 0.1;
 
   // Lokální stav objednávek
   const [localTransactions, setLocalTransactions] = useState<EnhancedTransaction[]>(transactions);

@@ -64,8 +64,7 @@ export default async function AffiliateOrdersPage({
           // Součet cen produktů bez DPH (price_without_vat) násobených množstvím
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const productSum = (matchingOrder.products as any[]).reduce((sum, product) => {
-            const quantity = product.quantity || 1;
-            return sum + (product.price_without_vat * quantity);
+            return sum + product.price_without_vat;
           }, 0);  
           computedPrice = productSum 
           computedStatus = matchingOrder.status;
