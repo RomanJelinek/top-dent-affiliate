@@ -57,9 +57,13 @@ export interface UpgatesOrder {
   admin_url: string;
   customer: UpgatesCustomer;
   products: unknown[];
-  discount_voucher?: unknown;
+  discount_voucher?: {discounts: {
+    vat: number, price: number
+}[]}
   quantity_discount?: unknown;
-  loyalty_points?: unknown;
+  loyalty_points?: {discounts: {
+    vat: number, price: number
+}[]}
   shipment: UpgatesShipment;
   payment: UpgatesPayment;
   attachments: unknown[];

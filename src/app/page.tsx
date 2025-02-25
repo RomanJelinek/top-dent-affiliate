@@ -64,9 +64,24 @@ export default async function AffiliateOrdersPage({
           // Součet cen produktů bez DPH (price_without_vat) násobených množstvím
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const productSum = (matchingOrder.products as any[]).reduce((sum, product) => {
-            return sum + product.price_without_vat;
+            const quantity = product.quantity || 1;
+            return sum + (product.price_without_vat * quantity);
           }, 0);  
-          computedPrice = productSum 
+
+          const loyaltyDiscountWithoutVAT = matchingOrder.loyalty_points && matchingOrder.loyalty_points.discounts
+  ? matchingOrder.loyalty_points.discounts.reduce((total, discount) => {
+      return total + discount.price / (1 + discount.vat / 100);
+    }, 0)
+  : 0;
+
+  const discountVoucherWithoutVAT = matchingOrder.discount_voucher && matchingOrder.discount_voucher.discounts
+  ? matchingOrder.discount_voucher.discounts.reduce(
+      (total, discount) => total + discount.price / (1 + discount.vat / 100),
+      0
+    )
+  : 0;
+         
+          computedPrice = productSum - loyaltyDiscountWithoutVAT - discountVoucherWithoutVAT
           computedStatus = matchingOrder.status;
           adminUrl = matchingOrder.admin_url;
           upgatesCurrency = matchingOrder.currency_id;
