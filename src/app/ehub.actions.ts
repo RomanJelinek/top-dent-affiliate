@@ -1,3 +1,5 @@
+import { EnhancedTransaction } from "./AffiliateOrdersClient";
+
 export interface Transaction {
   id: string;
   uuid: string;
@@ -58,4 +60,31 @@ export async function updateTransactionClient(
 
   const data = await res.json();
   return data.transaction;
+}
+
+export async function equalizeTransactionClient(
+  t: EnhancedTransaction
+): Promise<Transaction> {
+  if (t.upgatesPrice == null) throw new Error("Chybí dopočtená cena z Upgates.");
+
+  const body: Record<string, unknown> = {
+    orderAmount: +t.upgatesPrice.toFixed(2),
+  };
+
+  if (t.upgatesCurrency && t.upgatesCurrency !== "CZK") {
+    body.currency = t.upgatesCurrency;
+  }
+
+  const res = await fetch("/api/transaction-update", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ transaction: t, ...body }),
+  });
+
+  if (!res.ok) {
+    const { message } = await res.json();
+    throw new Error(message ?? "Chyba při dorovnání ceny.");
+  }
+  const data = await res.json();
+  return data.transaction as Transaction;
 }
