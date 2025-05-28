@@ -37,9 +37,13 @@ export default function AffiliateOrdersClient({
 }: AffiliateOrdersClientProps) {
   /* ----------------------- lokální stavy ----------------------- */
   const [localTransactions, setLocalTransactions] = useState(transactions);
-  const [checkboxStates, setCheckboxStates] = useState<Record<string, { checked: boolean }>>({});
+  const [checkboxStates, setCheckboxStates] = useState<
+    Record<string, { checked: boolean }>
+  >({});
   const [loadingIds, setLoadingIds] = useState<Record<string, boolean>>({});
-  const [equalizingIds, setEqualizingIds] = useState<Record<string, boolean>>({});
+  const [equalizingIds, setEqualizingIds] = useState<Record<string, boolean>>(
+    {},
+  );
   const [isBulkLoading, setIsBulkLoading] = useState(false);
 
   /* -------- synchronizace při změně stránky -------- */
@@ -58,7 +62,10 @@ export default function AffiliateOrdersClient({
   }, [transactions]);
 
   /* ------------------- handlery ------------------- */
-  const handleUpdate = async (o: EnhancedTransaction, s: "approved" | "declined") => {
+  const handleUpdate = async (
+    o: EnhancedTransaction,
+    s: "approved" | "declined",
+  ) => {
     setLoadingIds((p) => ({ ...p, [o.id]: true }));
     try {
       await updateTransactionClient(o, s);
@@ -72,9 +79,24 @@ export default function AffiliateOrdersClient({
     setEqualizingIds((p) => ({ ...p, [o.id]: true }));
     try {
       const upd = await equalizeTransactionClient(o);
-      setLocalTransactions((p) =>
-        p.map((t) => (t.id === o.id ? { ...t, orderAmount: upd.orderAmount } : t)),
+
+      /* 1️⃣ — uložíme nové hodnoty transakce */
+      setLocalTransactions((prev) =>
+        prev.map((t) =>
+          t.id === o.id
+            ? {
+                ...t,
+                orderAmount: upd.orderAmount,
+                ...(o.originalCurrency === o.upgatesCurrency
+                  ? { originalOrderAmount: upd.orderAmount }
+                  : {}),
+              }
+            : t,
+        ),
       );
+
+      /* 2️⃣ — automaticky zaškrtneme checkbox ⇒ řádek zezelená */
+      setCheckboxStates((prev) => ({ ...prev, [o.id]: { checked: true } }));
     } finally {
       setEqualizingIds((p) => ({ ...p, [o.id]: false }));
     }
@@ -82,7 +104,9 @@ export default function AffiliateOrdersClient({
 
   async function handleBulkUpdate(s: "approved" | "declined") {
     setIsBulkLoading(true);
-    const ids = Object.keys(checkboxStates).filter((id) => checkboxStates[id].checked);
+    const ids = Object.keys(checkboxStates).filter(
+      (id) => checkboxStates[id].checked,
+    );
     for (const id of ids) {
       const order = localTransactions.find((t) => t.id === id);
       if (!order) continue;
@@ -128,12 +152,24 @@ export default function AffiliateOrdersClient({
             <thead>
               <tr>
                 <th className="border-b border-gray-300 p-2 text-left">Select</th>
-                <th className="border-b border-gray-300 p-2 text-left">Order&nbsp;ID</th>
-                <th className="border-b border-gray-300 p-2 text-left">Datum&nbsp;a&nbsp;čas</th>
-                <th className="border-b border-gray-300 p-2 text-right">Ehub&nbsp;cena</th>
-                <th className="border-b border-gray-300 p-2 text-right">Upgates&nbsp;cena</th>
-                <th className="border-b border-gray-300 p-2 text-center">Upgates&nbsp;status</th>
-                <th className="border-b border-gray-300 p-2 text-center">Admin</th>
+                <th className="border-b border-gray-300 p-2 text-left">
+                  Order&nbsp;ID
+                </th>
+                <th className="border-b border-gray-300 p-2 text-left">
+                  Datum&nbsp;a&nbsp;čas
+                </th>
+                <th className="border-b border-gray-300 p-2 text-right">
+                  Ehub&nbsp;cena
+                </th>
+                <th className="border-b border-gray-300 p-2 text-right">
+                  Upgates&nbsp;cena
+                </th>
+                <th className="border-b border-gray-300 p-2 text-center">
+                  Upgates&nbsp;status
+                </th>
+                <th className="border-b border-gray-300 p-2 text-center">
+                  Admin
+                </th>
                 <th className="border-b border-gray-300 p-2 text-left">Akce</th>
               </tr>
             </thead>
@@ -157,7 +193,10 @@ export default function AffiliateOrdersClient({
                         type="checkbox"
                         checked={checked}
                         onChange={() =>
-                          setCheckboxStates((p) => ({ ...p, [o.id]: { checked: !checked } }))
+                          setCheckboxStates((p) => ({
+                            ...p,
+                            [o.id]: { checked: !checked },
+                          }))
                         }
                         className="w-6 h-6 accent-blue-500"
                       />
@@ -171,15 +210,18 @@ export default function AffiliateOrdersClient({
                       {new Date(o.dateTime).toLocaleString("cs-CZ")}
                     </td>
 
-                    {/* ehub cena – ve stejné měně jako Upgates */}
+                    {/* ehub cena */}
                     <td className="border-b border-gray-200 p-2 text-right">
-                      {comparableEhubAmount(o).toFixed(2)} {o.upgatesCurrency ?? o.originalCurrency}
+                      {comparableEhubAmount(o).toFixed(2)}{" "}
+                      {o.upgatesCurrency ?? o.originalCurrency}
                     </td>
 
                     {/* upgates cena */}
                     <td className="border-b border-gray-200 p-2 text-right">
                       {o.upgatesPrice != null
-                        ? `${o.upgatesPrice.toFixed(2)} ${o.upgatesCurrency ?? ""}`
+                        ? `${o.upgatesPrice.toFixed(2)} ${
+                            o.upgatesCurrency ?? ""
+                          }`
                         : "-"}
                     </td>
 
@@ -227,15 +269,18 @@ export default function AffiliateOrdersClient({
                           </>
                         )}
 
-                        {/* dorovnat cenu – poslední */}
+                        {/* dorovnat cenu */}
                         {o.upgatesPrice != null &&
-                          Math.abs(comparableEhubAmount(o) - o.upgatesPrice) > 1 && (
+                          Math.abs(comparableEhubAmount(o) - o.upgatesPrice) >
+                            1 && (
                             <button
                               onClick={() => handleEqualize(o)}
                               disabled={equalizingIds[o.id]}
                               className="px-2 py-1 bg-yellow-500 text-white rounded disabled:opacity-50"
                             >
-                              {equalizingIds[o.id] ? "Načítám…" : "Dorovnat cenu"}
+                              {equalizingIds[o.id]
+                                ? "Načítám…"
+                                : "Dorovnat cenu"}
                             </button>
                           )}
                       </div>
@@ -255,7 +300,9 @@ export default function AffiliateOrdersClient({
                   key={p}
                   href={`/?page=${p}`}
                   className={`px-3 py-1 border rounded ${
-                    p === currentPage ? "bg-blue-500 text-white" : "bg-white text-blue-500"
+                    p === currentPage
+                      ? "bg-blue-500 text-white"
+                      : "bg-white text-blue-500"
                   }`}
                 >
                   {p}
